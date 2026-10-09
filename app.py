@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from fpdf import FPDF
 
 st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
 
@@ -44,7 +45,7 @@ st.markdown("---")
 section2_container = st.container()
 
 # ==========================================
-# SECTION 1: MAJOR MACRO SLIDERS (Unrestricted)
+# SECTION 1: MAJOR MACRO SLIDERS
 # ==========================================
 with section1_container:
     st.header("Section 1: Major Budget Summary")
@@ -74,7 +75,7 @@ with section1_container:
             contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont")
 
 # ==========================================
-# SECTION 2: GRANULAR DEPARTMENT SLIDERS (Unrestricted)
+# SECTION 2: GRANULAR DEPARTMENT SLIDERS
 # ==========================================
 with section2_container:
     st.header("Section 2: Granular Department Adjustments")
@@ -153,3 +154,73 @@ with charts_container:
                   title="Granular Department Breakdown", color="Department", template="plotly_dark")
     fig2.update_traces(showlegend=False, textfont_size=12, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=10)
     chart_col2.plotly_chart(fig2, use_container_width=True)
+
+# ==========================================
+# EXPORT TO CSV & PDF
+# ==========================================
+st.markdown("---")
+st.subheader("📥 Export Your Adjusted Budget")
+
+# Data preparation
+export_data = {
+    "Phase": ["Above-The-Line", "Above-The-Line", "Production", "Production", "Production", "Production", "Production", "Pre-Production", "Pre-Production", "Post-Production", "Post-Production", "Post-Production", "Post-Production", "Contingency", "TOTAL BUDGET"],
+    "Department": ["Director Fee", "Cast Fee", "Location", "Crew", "Equipment", "Food & Lodging", "Travel & Fuel", "Scouting & Sets", "Prosthetics & SFX", "Edit & DI/Color", "Foley & Sound", "Original Score", "Dolby Atmos Mix", f"Contingency ({contingency_pct}%)", "ALL DEPARTMENTS"],
+    "Cost (INR)": [dir_fee, cast_fee, loc*days, crew*days, equip*days, food*days, travel*days, pre_base, sfx, edit, foley, score, atmos, contingency, total_budget]
+}
+df_export = pd.DataFrame(export_data)
+
+# CSV Generation
+csv_data = df_export.to_csv(index=False).encode('utf-8')
+
+# PDF Generation Function
+def create_pdf(dataframe, total):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "VRITHA - Feature Film Budget Top Sheet", ln=True, align='C')
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 10, f"Total Approved Budget: {format_inr(total)}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Table Header
+    pdf.set_fill_color(220, 220, 220)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(50, 10, "Phase", border=1, fill=True, align='C')
+    pdf.cell(80, 10, "Department", border=1, fill=True, align='C')
+    pdf.cell(60, 10, "Allocated Cost (INR)", border=1, ln=True, fill=True, align='C')
+    
+    # Table Rows
+    pdf.set_font("Arial", '', 10)
+    for i in range(len(dataframe)):
+        # Make the final Total row bold
+        if dataframe.iloc[i]['Phase'] == "TOTAL BUDGET":
+            pdf.set_font("Arial", 'B', 10)
+        pdf.cell(50, 10, str(dataframe.iloc[i]['Phase']), border=1)
+        pdf.cell(80, 10, str(dataframe.iloc[i]['Department']), border=1)
+        pdf.cell(60, 10, format_inr(dataframe.iloc[i]['Cost (INR)']), border=1, ln=True, align='R')
+        
+    # Return as bytes so Streamlit can download it
+    return bytes(pdf.output(dest='S'), 'latin1')
+
+pdf_data = create_pdf(df_export, total_budget)
+
+# Render the download buttons side-by-side
+dl_col1, dl_col2 = st.columns(2)
+with dl_col1:
+    st.download_button(
+        label="📊 Download CSV (Spreadsheet)",
+        data=csv_data,
+        file_name="vritha_budget_export.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+with dl_col2:
+    st.download_button(
+        label="📄 Download PDF (Fine Print)",
+        data=pdf_data,
+        file_name="vritha_budget_topsheet.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
