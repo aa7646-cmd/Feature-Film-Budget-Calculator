@@ -42,7 +42,7 @@ header_container = st.container()
 with header_container:
     title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
     with title_col:
-        st.title("🎬 VRITHA - Master Dashboard")
+        st.title("🎬 Budget - Master Dashboard")
         st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
 
 use_granular = url_toggle("🔬 UNLOCK SECTION 2: Let Granular Department Sliders Drive the Total Budget", False, "granular_mode")
