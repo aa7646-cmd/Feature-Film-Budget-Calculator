@@ -147,15 +147,9 @@ subtotal = calc_prod_phase + calc_total_crew + calc_pre_prod + calc_post_prod + 
 contingency = subtotal * (contingency_pct / 100.0)
 total_budget = subtotal + contingency
 
-# ==========================================
+#===========================================
 # RENDER METRICS & CHARTS
-# ==========================================
-with metrics_container:
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Budget (Inc. Contingency)", format_inr(total_budget))
-    m2.metric("Total Crew Cost", format_inr(calc_total_crew))
-    m3.metric("Director Fee", format_inr(dir_fee))
-    m4.metric("Total Cast Fee", format_inr(cast_fee))
+#===========================================
 
 with charts_container:
     chart_col1, chart_col2 = st.columns(2)
@@ -170,8 +164,15 @@ with charts_container:
     
     fig1 = px.bar(df_macro, x="Category", y="Cost (₹)", text=df_macro["Cost (₹)"].apply(format_inr), 
                   title="Macro Budget Overview", color="Category", template="plotly_dark")
+    
+    # LOCK CHART 1: Disable zooming, panning, and toolbar
+    fig1.update_layout(dragmode=False)
+    fig1.update_xaxes(fixedrange=True)
+    fig1.update_yaxes(fixedrange=True)
     fig1.update_traces(showlegend=False, textfont_size=14, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=15)
-    chart_col1.plotly_chart(fig1, use_container_width=True)
+    
+    # Apply config to hide the modebar
+    chart_col1.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
 
     df_micro = pd.DataFrame({
         "Department": ["Location", "Crew", "Equipment", "Food", "Travel", "Prosthetics", "Edit/DI", "Foley", "Score", "Atmos", "Marketing"],
@@ -182,8 +183,15 @@ with charts_container:
     
     fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", text=df_micro["Cost (₹)"].apply(format_inr),
                   title="Granular Department Breakdown", color="Department", template="plotly_dark")
+    
+    # LOCK CHART 2: Disable zooming, panning, and toolbar
+    fig2.update_layout(dragmode=False)
+    fig2.update_xaxes(fixedrange=True)
+    fig2.update_yaxes(fixedrange=True)
     fig2.update_traces(showlegend=False, textfont_size=12, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=10)
-    chart_col2.plotly_chart(fig2, use_container_width=True)
+    
+    # Apply config to hide the modebar
+    chart_col2.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
 
 # ==========================================
 # GENERATE EXPORTS & INJECT INTO TOP RIGHT
