@@ -31,8 +31,17 @@ def format_inr(number):
     remaining_with_commas = ",".join([remaining[max(i-2, 0):i] for i in range(len(remaining), 0, -2)][::-1])
     return f"₹{remaining_with_commas},{last_three}"
 
-st.title("🎬 VRITHA - Master Budget Dashboard")
-st.markdown("Set your variables, then **copy the URL from your browser's address bar** to share this exact calculation.")
+# ==========================================
+# HEADER: TITLE & TOP-RIGHT EXPORT BUTTONS
+# ==========================================
+header_container = st.container()
+with header_container:
+    # We split the top row: Title on the left, buttons on the right
+    title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
+    
+    with title_col:
+        st.title("🎬 VRITHA - Master Dashboard")
+        st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
 
 use_granular = url_toggle("🔬 UNLOCK SECTION 2: Let Granular Department Sliders Drive the Total Budget", False, "granular_mode")
 st.markdown("---")
@@ -156,12 +165,8 @@ with charts_container:
     chart_col2.plotly_chart(fig2, use_container_width=True)
 
 # ==========================================
-# EXPORT TO CSV & PDF
+# GENERATE EXPORTS & INJECT INTO TOP RIGHT
 # ==========================================
-st.markdown("---")
-st.subheader("📥 Export Your Adjusted Budget")
-
-# Data preparation
 export_data = {
     "Phase": ["Above-The-Line", "Above-The-Line", "Production", "Production", "Production", "Production", "Production", "Pre-Production", "Pre-Production", "Post-Production", "Post-Production", "Post-Production", "Post-Production", "Contingency", "TOTAL BUDGET"],
     "Department": ["Director Fee", "Cast Fee", "Location", "Crew", "Equipment", "Food & Lodging", "Travel & Fuel", "Scouting & Sets", "Prosthetics & SFX", "Edit & DI/Color", "Foley & Sound", "Original Score", "Dolby Atmos Mix", f"Contingency ({contingency_pct}%)", "ALL DEPARTMENTS"],
@@ -169,58 +174,43 @@ export_data = {
 }
 df_export = pd.DataFrame(export_data)
 
-# CSV Generation
 csv_data = df_export.to_csv(index=False).encode('utf-8')
 
-# PDF Generation Function
 def create_pdf(dataframe, total):
     pdf = FPDF()
     pdf.add_page()
-    
-    # Header
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "VRITHA - Feature Film Budget Top Sheet", ln=True, align='C')
     pdf.set_font("Arial", '', 12)
     pdf.cell(0, 10, f"Total Approved Budget: {format_inr(total)}", ln=True, align='C')
     pdf.ln(10)
     
-    # Table Header
     pdf.set_fill_color(220, 220, 220)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(50, 10, "Phase", border=1, fill=True, align='C')
     pdf.cell(80, 10, "Department", border=1, fill=True, align='C')
     pdf.cell(60, 10, "Allocated Cost (INR)", border=1, ln=True, fill=True, align='C')
     
-    # Table Rows
     pdf.set_font("Arial", '', 10)
     for i in range(len(dataframe)):
-        # Make the final Total row bold
         if dataframe.iloc[i]['Phase'] == "TOTAL BUDGET":
             pdf.set_font("Arial", 'B', 10)
         pdf.cell(50, 10, str(dataframe.iloc[i]['Phase']), border=1)
         pdf.cell(80, 10, str(dataframe.iloc[i]['Department']), border=1)
         pdf.cell(60, 10, format_inr(dataframe.iloc[i]['Cost (INR)']), border=1, ln=True, align='R')
         
-    # Return as bytes so Streamlit can download it
-    return bytes(pdf.output(dest='S'), 'latin1')
+    try:
+        return bytes(pdf.output(dest='S'), 'latin1')
+    except:
+        return bytes(pdf.output(dest='S'))
 
 pdf_data = create_pdf(df_export, total_budget)
 
-# Render the download buttons side-by-side
-dl_col1, dl_col2 = st.columns(2)
-with dl_col1:
-    st.download_button(
-        label="📊 Download CSV (Spreadsheet)",
-        data=csv_data,
-        file_name="vritha_budget_export.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
-with dl_col2:
-    st.download_button(
-        label="📄 Download PDF (Fine Print)",
-        data=pdf_data,
-        file_name="vritha_budget_topsheet.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
+# INJECT BUTTONS INTO THE TOP RIGHT COLUMNS
+with btn_col1:
+    st.markdown("<br>", unsafe_allow_html=True) # Adds a little space to align with the title
+    st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_budget.csv", mime="text/csv", use_container_width=True)
+
+with btn_col2:
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_topsheet.pdf", mime="application/pdf", use_container_width=True)
