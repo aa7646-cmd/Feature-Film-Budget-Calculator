@@ -157,7 +157,7 @@ def create_pdf(dataframe, total):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "VRITHA - Feature Film Budget Top Sheet", ln=True, align='C')
+    pdf.cell(0, 10, "Budget - Feature Film Budget Top Sheet", ln=True, align='C')
     pdf.set_font("Arial", '', 12)
     safe_total = format_inr(total).replace("₹", "Rs. ")
     pdf.cell(0, 10, f"Total Approved Budget: {safe_total}", ln=True, align='C')
@@ -188,14 +188,14 @@ pdf_data = create_pdf(df_export, total_budget)
 with header_container:
     title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
     with title_col:
-        st.title("🎬 VRITHA - Master Dashboard")
+        st.title("🎬 Budget - Master Dashboard")
         st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
     with btn_col1:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_budget.csv", mime="text/csv", use_container_width=True)
+        st.download_button("📊 CSV Export", data=csv_data, file_name="budget.csv", mime="text/csv", use_container_width=True)
     with btn_col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_topsheet.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button("📄 PDF Export", data=pdf_data, file_name="topsheet.pdf", mime="application/pdf", use_container_width=True)
 
 # ==========================================
 # POPULATE TOP METRICS (5 Columns with Captions)
