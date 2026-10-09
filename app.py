@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from fpdf import FPDF
 
-st.set_page_config(page_title="Budget Master Dashboard", layout="wide")
+st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
 
 # ==========================================
 # URL SYNC HELPERS & FORMATTING
@@ -36,11 +36,9 @@ def format_inr(number):
 # ==========================================
 header_container = st.container()
 with header_container:
-    # We split the top row: Title on the left, buttons on the right
     title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
-    
     with title_col:
-        st.title("🎬 Budget - Master Dashboard")
+        st.title("🎬 VRITHA - Master Dashboard")
         st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
 
 use_granular = url_toggle("🔬 UNLOCK SECTION 2: Let Granular Department Sliders Drive the Total Budget", False, "granular_mode")
@@ -182,14 +180,17 @@ def create_pdf(dataframe, total):
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "VRITHA - Feature Film Budget Top Sheet", ln=True, align='C')
     pdf.set_font("Arial", '', 12)
-    pdf.cell(0, 10, f"Total Approved Budget: {format_inr(total)}", ln=True, align='C')
+    
+    # CRITICAL FIX: Replace the ₹ symbol with 'Rs. ' specifically for the PDF
+    safe_total = format_inr(total).replace("₹", "Rs. ")
+    pdf.cell(0, 10, f"Total Approved Budget: {safe_total}", ln=True, align='C')
     pdf.ln(10)
     
     pdf.set_fill_color(220, 220, 220)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(50, 10, "Phase", border=1, fill=True, align='C')
     pdf.cell(80, 10, "Department", border=1, fill=True, align='C')
-    pdf.cell(60, 10, "Allocated Cost (INR)", border=1, ln=True, fill=True, align='C')
+    pdf.cell(60, 10, "Allocated Cost", border=1, ln=True, fill=True, align='C')
     
     pdf.set_font("Arial", '', 10)
     for i in range(len(dataframe)):
@@ -197,18 +198,18 @@ def create_pdf(dataframe, total):
             pdf.set_font("Arial", 'B', 10)
         pdf.cell(50, 10, str(dataframe.iloc[i]['Phase']), border=1)
         pdf.cell(80, 10, str(dataframe.iloc[i]['Department']), border=1)
-        pdf.cell(60, 10, format_inr(dataframe.iloc[i]['Cost (INR)']), border=1, ln=True, align='R')
         
-    try:
-        return bytes(pdf.output(dest='S'), 'latin1')
-    except:
-        return bytes(pdf.output(dest='S'))
+        # CRITICAL FIX: Replace the ₹ symbol here as well
+        safe_cost = format_inr(dataframe.iloc[i]['Cost (INR)']).replace("₹", "Rs. ")
+        pdf.cell(60, 10, safe_cost, border=1, ln=True, align='R')
+        
+    return pdf.output(dest='S').encode('latin-1')
 
 pdf_data = create_pdf(df_export, total_budget)
 
-# INJECT BUTTONS INTO THE TOP RIGHT COLUMNS
+# Render buttons in the top right
 with btn_col1:
-    st.markdown("<br>", unsafe_allow_html=True) # Adds a little space to align with the title
+    st.markdown("<br>", unsafe_allow_html=True)
     st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_budget.csv", mime="text/csv", use_container_width=True)
 
 with btn_col2:
