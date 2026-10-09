@@ -5,15 +5,12 @@ import plotly.express as px
 st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
 
 # ==========================================
-# URL SYNC HELPERS (Saves state to the web address)
+# URL SYNC HELPERS & FORMATTING
 # ==========================================
 def url_slider(label, min_v, max_v, default_v, step, param, disabled=False):
-    # Check if this specific slider has a saved value in the URL
     if param in st.query_params:
         default_v = int(st.query_params[param])
-    # Create the slider
     val = st.slider(label, min_v, max_v, default_v, step=step, disabled=disabled)
-    # Update the URL with the new value
     st.query_params[param] = val
     return val
 
@@ -24,12 +21,18 @@ def url_toggle(label, default_v, param):
     st.query_params[param] = val
     return val
 
+def format_inr(number):
+    num_str = str(int(number))
+    if len(num_str) <= 3:
+        return f"₹{num_str}"
+    last_three = num_str[-3:]
+    remaining = num_str[:-3]
+    remaining_with_commas = ",".join([remaining[max(i-2, 0):i] for i in range(len(remaining), 0, -2)][::-1])
+    return f"₹{remaining_with_commas},{last_three}"
+
 st.title("🎬 VRITHA - Master Budget Dashboard")
 st.markdown("Set your variables, then **copy the URL from your browser's address bar** to share this exact calculation.")
 
-# ==========================================
-# THE TOGGLE SWITCH
-# ==========================================
 use_granular = url_toggle("🔬 UNLOCK SECTION 2: Let Granular Department Sliders Drive the Total Budget", False, "granular_mode")
 st.markdown("---")
 
@@ -41,7 +44,7 @@ st.markdown("---")
 section2_container = st.container()
 
 # ==========================================
-# SECTION 1: MAJOR MACRO SLIDERS
+# SECTION 1: MAJOR MACRO SLIDERS (Unrestricted)
 # ==========================================
 with section1_container:
     st.header("Section 1: Major Budget Summary")
@@ -50,28 +53,28 @@ with section1_container:
         st.info("📊 MACRO MODE: You are currently driving the budget using these top-level sliders.")
         c1, c2, c3 = st.columns(3)
         with c1:
-            days = url_slider("Shoot Days", 20, 40, 30, 1, "m_days")
-            daily_burn = url_slider("Daily Burn Rate (₹)", 100000, 200000, 125000, 5000, "m_burn")
+            days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days")
+            daily_burn = url_slider("Daily Burn Rate (₹)", 0, 5000000, 125000, 5000, "m_burn")
         with c2:
-            pre_prod = url_slider("Pre-Production (₹)", 500000, 2000000, 1000000, 100000, "m_pre")
-            post_prod = url_slider("Post-Production (₹)", 1500000, 4000000, 3000000, 100000, "m_post")
+            pre_prod = url_slider("Pre-Production (₹)", 0, 50000000, 1000000, 50000, "m_pre")
+            post_prod = url_slider("Post-Production (₹)", 0, 50000000, 3000000, 50000, "m_post")
         with c3:
-            cast_fee = url_slider("Total Cast Fee (₹)", 500000, 2000000, 1000000, 100000, "m_cast")
-            dir_fee = url_slider("Director Fee (₹)", 100000, 1000000, 300000, 50000, "m_dir")
-            contingency_pct = url_slider("Contingency (%)", 5, 20, 10, 1, "m_cont")
+            cast_fee = url_slider("Total Cast Fee (₹)", 0, 50000000, 1000000, 50000, "m_cast")
+            dir_fee = url_slider("Director Fee (₹)", 0, 20000000, 300000, 50000, "m_dir")
+            contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont")
     else:
         st.success("🔬 GRANULAR MODE: Daily Burn, Pre-Production, and Post-Production are currently locked. They are being calculated by your inputs in Section 2.")
         c1, c2, c3 = st.columns(3)
         with c1:
-            days = url_slider("Shoot Days", 20, 40, 30, 1, "m_days")
+            days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days")
         with c2:
-            cast_fee = url_slider("Total Cast Fee (₹)", 500000, 2000000, 1000000, 100000, "m_cast")
-            dir_fee = url_slider("Director Fee (₹)", 100000, 1000000, 300000, 50000, "m_dir")
+            cast_fee = url_slider("Total Cast Fee (₹)", 0, 50000000, 1000000, 50000, "m_cast")
+            dir_fee = url_slider("Director Fee (₹)", 0, 20000000, 300000, 50000, "m_dir")
         with c3:
-            contingency_pct = url_slider("Contingency (%)", 5, 20, 10, 1, "m_cont")
+            contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont")
 
 # ==========================================
-# SECTION 2: GRANULAR DEPARTMENT SLIDERS
+# SECTION 2: GRANULAR DEPARTMENT SLIDERS (Unrestricted)
 # ==========================================
 with section2_container:
     st.header("Section 2: Granular Department Adjustments")
@@ -81,21 +84,21 @@ with section2_container:
     g1, g2, g3 = st.columns(3)
     with g1:
         st.subheader("Daily Shoot Costs")
-        loc = url_slider("Location/Day", 5000, 30000, 12000, 1000, "g_loc", not use_granular)
-        crew = url_slider("Crew/Day", 20000, 80000, 40000, 2000, "g_crew", not use_granular)
-        equip = url_slider("Equipment/Day", 10000, 40000, 18000, 1000, "g_eq", not use_granular)
-        food = url_slider("Food & Lodging/Day", 10000, 40000, 20000, 1000, "g_food", not use_granular)
-        travel = url_slider("Travel/Day", 2000, 15000, 5000, 1000, "g_trav", not use_granular)
+        loc = url_slider("Location/Day", 0, 1000000, 12000, 1000, "g_loc", not use_granular)
+        crew = url_slider("Crew/Day", 0, 2000000, 40000, 2000, "g_crew", not use_granular)
+        equip = url_slider("Equipment/Day", 0, 1000000, 18000, 1000, "g_eq", not use_granular)
+        food = url_slider("Food & Lodging/Day", 0, 1000000, 20000, 1000, "g_food", not use_granular)
+        travel = url_slider("Travel/Day", 0, 500000, 5000, 1000, "g_trav", not use_granular)
     with g2:
         st.subheader("Pre-Production & SFX")
-        pre_base = url_slider("Scouting & Sets", 200000, 1500000, 400000, 50000, "g_pre", not use_granular)
-        sfx = url_slider("Prosthetics & SFX", 100000, 1000000, 600000, 50000, "g_sfx", not use_granular)
+        pre_base = url_slider("Scouting & Sets", 0, 20000000, 400000, 50000, "g_pre", not use_granular)
+        sfx = url_slider("Prosthetics & SFX", 0, 20000000, 600000, 50000, "g_sfx", not use_granular)
     with g3:
         st.subheader("Post-Production")
-        edit = url_slider("Edit & DI/Color", 200000, 1500000, 800000, 50000, "g_edit", not use_granular)
-        foley = url_slider("Foley & Sound Design", 200000, 1500000, 800000, 50000, "g_fol", not use_granular)
-        score = url_slider("Original Score", 100000, 800000, 400000, 50000, "g_sco", not use_granular)
-        atmos = url_slider("Dolby Atmos Mix", 100000, 800000, 400000, 50000, "g_atm", not use_granular)
+        edit = url_slider("Edit & DI/Color", 0, 20000000, 800000, 50000, "g_edit", not use_granular)
+        foley = url_slider("Foley & Sound Design", 0, 20000000, 800000, 50000, "g_fol", not use_granular)
+        score = url_slider("Original Score", 0, 20000000, 400000, 50000, "g_sco", not use_granular)
+        atmos = url_slider("Dolby Atmos Mix", 0, 20000000, 400000, 50000, "g_atm", not use_granular)
 
 # ==========================================
 # MATH ENGINE
@@ -119,16 +122,6 @@ subtotal = calc_prod_phase + calc_pre_prod + calc_post_prod + atl_cost
 contingency = subtotal * (contingency_pct / 100.0)
 total_budget = subtotal + contingency
 
-def format_inr(number):
-    num_str = str(int(number))
-    if len(num_str) <= 3:
-        return f"₹{num_str}"
-    last_three = num_str[-3:]
-    remaining = num_str[:-3]
-    # Add commas every two digits for the Indian system
-    remaining_with_commas = ",".join([remaining[max(i-2, 0):i] for i in range(len(remaining), 0, -2)][::-1])
-    return f"₹{remaining_with_commas},{last_three}"
-
 # ==========================================
 # RENDER METRICS & CHARTS
 # ==========================================
@@ -142,7 +135,6 @@ with metrics_container:
 with charts_container:
     chart_col1, chart_col2 = st.columns(2)
     
-    # Chart 1: Macro Budget Bar
     df_macro = pd.DataFrame({
         "Category": ["Above-The-Line", "Production Phase", "Pre-Production", "Post-Production", "Contingency"],
         "Cost (₹)": [atl_cost, calc_prod_phase, calc_pre_prod, calc_post_prod, contingency]
@@ -152,7 +144,6 @@ with charts_container:
     fig1.update_traces(showlegend=False, textfont_size=14, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=15)
     chart_col1.plotly_chart(fig1, use_container_width=True)
 
-    # Chart 2: Granular Breakdown Bar
     df_micro = pd.DataFrame({
         "Department": ["Location", "Crew", "Equipment", "Food", "Travel", "Prosthetics", "Edit/DI", "Foley", "Score", "Atmos"],
         "Cost (₹)": [loc*days, crew*days, equip*days, food*days, travel*days, sfx, edit, foley, score, atmos]
