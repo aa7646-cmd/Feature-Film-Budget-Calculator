@@ -109,7 +109,7 @@ def format_inr(number):
     return f"₹{number:,.0f}"
 
 # ==========================================
-# RENDER METRICS & CHARTS AT THE TOP
+# 5. TOP SECTION: CHARTS & METRICS
 # ==========================================
 with metrics_container:
     m1, m2, m3, m4 = st.columns(4)
@@ -121,23 +121,46 @@ with metrics_container:
 with charts_container:
     chart_col1, chart_col2 = st.columns(2)
     
-    # Chart 1: Macro Budget Pie
+    # Chart 1: Macro Budget Bar Chart (Replaced Pie Chart)
     df_macro = pd.DataFrame({
         "Category": ["Above-The-Line", "Production Phase", "Pre-Production", "Post-Production", "Contingency"],
         "Cost (₹)": [atl_cost, calc_prod_phase, calc_pre_prod, calc_post_prod, contingency]
     })
-    fig1 = px.pie(df_macro, values="Cost (₹)", names="Category", title="Macro Budget Overview", 
-                  template="plotly_dark", hole=0.4)
-    fig1.update_traces(textposition='inside', textinfo='percent+label')
+    
+    # Notice we pass text_auto inside px.bar directly
+    fig1 = px.bar(df_macro, x="Category", y="Cost (₹)", text_auto='.2s', 
+                  title="Macro Budget Overview", 
+                  color="Category", template="plotly_dark")
+    
+    # Apply rounded edges and clean up the labels
+    fig1.update_traces(
+        showlegend=False, 
+        textfont_size=14, 
+        textangle=0, 
+        textposition="outside", 
+        cliponaxis=False,
+        marker_cornerradius=15  # Gives the bars nice rounded edges
+    )
     chart_col1.plotly_chart(fig1, use_container_width=True)
 
-    # Chart 2: Granular Department Bar
+    # Chart 2: Granular Department Bar Chart
     df_micro = pd.DataFrame({
         "Department": ["Location", "Crew", "Equipment", "Food/Lodging", "Travel", "Prosthetics", "Edit/DI", "Foley", "Score", "Atmos"],
         "Cost (₹)": [loc*days, crew*days, equip*days, food*days, travel*days, sfx, edit, foley, score, atmos]
     }).sort_values(by="Cost (₹)", ascending=False)
     
-    fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", title="Granular Department Breakdown", 
+    # Fixed the text_auto placement here as well
+    fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", text_auto='.2s',
+                  title="Granular Department Breakdown", 
                   template="plotly_dark", color="Department")
-    fig2.update_traces(text_auto='.2s', showlegend=False, textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    
+    # Apply rounded edges
+    fig2.update_traces(
+        showlegend=False, 
+        textfont_size=12, 
+        textangle=0, 
+        textposition="outside", 
+        cliponaxis=False,
+        marker_cornerradius=10  # Rounded edges for the smaller bars
+    )
     chart_col2.plotly_chart(fig2, use_container_width=True)
