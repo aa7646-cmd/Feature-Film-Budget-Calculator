@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from fpdf import FPDF
 
-st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
+st.set_page_config(page_title="Budget Master Dashboard", layout="wide")
 
 # ==========================================
 # URL SYNC HELPERS & FORMATTING
