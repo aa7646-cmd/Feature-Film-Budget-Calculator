@@ -147,7 +147,7 @@ with charts_container:
         "Category": ["Above-The-Line", "Production Phase", "Pre-Production", "Post-Production", "Contingency"],
         "Cost (₹)": [atl_cost, calc_prod_phase, calc_pre_prod, calc_post_prod, contingency]
     })
-    fig1 = px.bar(df_macro, x="Category", y="Cost (₹)", text_auto='.2s', 
+    fig1 = px.bar(df_macro, x="Category", y="Cost (₹)", text=df_macro["Cost (₹)"].apply(format_inr), 
                   title="Macro Budget Overview", color="Category", template="plotly_dark")
     fig1.update_traces(showlegend=False, textfont_size=14, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=15)
     chart_col1.plotly_chart(fig1, use_container_width=True)
@@ -158,7 +158,7 @@ with charts_container:
         "Cost (₹)": [loc*days, crew*days, equip*days, food*days, travel*days, sfx, edit, foley, score, atmos]
     }).sort_values(by="Cost (₹)", ascending=False)
     
-    fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", text_auto='.2s',
+    fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", text=df_micro["Cost (₹)"].apply(format_inr),
                   title="Granular Department Breakdown", color="Department", template="plotly_dark")
     fig2.update_traces(showlegend=False, textfont_size=12, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=10)
     chart_col2.plotly_chart(fig2, use_container_width=True)
