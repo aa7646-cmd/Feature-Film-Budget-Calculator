@@ -120,7 +120,14 @@ contingency = subtotal * (contingency_pct / 100.0)
 total_budget = subtotal + contingency
 
 def format_inr(number):
-    return f"₹{number:,.0f}"
+    num_str = str(int(number))
+    if len(num_str) <= 3:
+        return f"₹{num_str}"
+    last_three = num_str[-3:]
+    remaining = num_str[:-3]
+    # Add commas every two digits for the Indian system
+    remaining_with_commas = ",".join([remaining[max(i-2, 0):i] for i in range(len(remaining), 0, -2)][::-1])
+    return f"₹{remaining_with_commas},{last_three}"
 
 # ==========================================
 # RENDER METRICS & CHARTS
