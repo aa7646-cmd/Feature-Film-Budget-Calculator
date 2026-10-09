@@ -8,10 +8,11 @@ st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
 # ==========================================
 # URL SYNC HELPERS & FORMATTING
 # ==========================================
-def url_slider(label, min_v, max_v, default_v, step, param, disabled=False):
+# Added format_str parameter to control ₹ vs % vs plain numbers
+def url_slider(label, min_v, max_v, default_v, step, param, disabled=False, format_str="₹%,d"):
     if param in st.query_params:
         default_v = int(st.query_params[param])
-    val = st.slider(label, min_v, max_v, default_v, step=step, disabled=disabled, format="₹%,d")
+    val = st.slider(label, min_v, max_v, default_v, step=step, disabled=disabled, format=format_str)
     st.query_params[param] = val
     return val
 
@@ -36,7 +37,6 @@ def format_inr(number):
 
 # ==========================================
 # LAYOUT CONTAINERS 
-# (This dictates the exact visual order on screen)
 # ==========================================
 header_container = st.container()
 st.markdown("---")
@@ -53,15 +53,12 @@ section2_container = st.container()
 # ==========================================
 with section1_container:
     st.header("Section 1: Major Budget Summary")
-    # Toggle placed directly on top of Section 1
     macro_on = url_toggle("🔓 Enable Major Budget Adjustments", True, "t_macro")
     
 with section2_container:
     st.header("Section 2: Granular Department Adjustments")
-    # Toggle placed directly on top of Section 2
     gran_on = url_toggle("🔬 Enable Granular Adjustments", False, "t_gran")
 
-# --- Security/Locking Logic based on your Toggles ---
 disable_all_macro = not macro_on
 disable_macro_overlap = gran_on or (not macro_on)
 disable_gran = not gran_on
@@ -74,7 +71,8 @@ with section1_container:
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days", disable_all_macro)
+        # Changed format to "%d" to remove the Rupee symbol from days
+        days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days", disable_all_macro, "%d")
         daily_burn = url_slider("Daily Burn (Excl. Crew)", 0, 5000000, 85000, 5000, "m_burn", disable_macro_overlap)
         macro_crew = url_slider("Total Crew Cost (₹)", 0, 20000000, 1200000, 50000, "m_crew", disable_macro_overlap)
     with c2:
@@ -85,7 +83,8 @@ with section1_container:
         dir_fee = url_slider("Director Fee (₹)", 0, 20000000, 0, 50000, "m_dir", disable_all_macro)
     with c4:
         marketing = url_slider("Marketing & PR (₹)", 0, 20000000, 500000, 50000, "m_mkt", disable_macro_overlap)
-        contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont", disable_all_macro)
+        # Changed format to "%d%%" to show a percentage sign instead of Rupees
+        contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont", disable_all_macro, "%d%%")
 
 with section2_container:
     if not gran_on:
@@ -199,14 +198,30 @@ with header_container:
         st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_topsheet.pdf", mime="application/pdf", use_container_width=True)
 
 # ==========================================
-# POPULATE TOP METRICS
+# POPULATE TOP METRICS (5 Columns with Captions)
 # ==========================================
 with metrics_container:
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("💰 TOTAL BUDGET", format_inr(total_budget))
-    m2.metric("🎬 Post-Production Total", format_inr(calc_post_prod))
-    m3.metric("📝 Pre-Production Total", format_inr(calc_pre_prod))
-    m4.metric("🎭 Cast & Crew Totals", format_inr(calc_cast_crew))
+    m1, m2, m3, m4, m5 = st.columns(5)
+    
+    with m1:
+        st.metric("💰 TOTAL BUDGET", format_inr(total_budget))
+        st.caption("Includes all phases + Contingency")
+        
+    with m2:
+        st.metric("📝 Total Pre-Production", format_inr(calc_pre_prod))
+        st.caption("Scouting, set builds, prosthetics & SFX")
+        
+    with m3:
+        st.metric("🎥 Total Production", format_inr(calc_prod_phase))
+        st.caption("Principal photography, locations, gear & food")
+        
+    with m4:
+        st.metric("🎬 Total Post-Production", format_inr(calc_post_prod))
+        st.caption("Editing, DI, Foley, original score & Atmos")
+        
+    with m5:
+        st.metric("🎭 Cast & Crew Totals", format_inr(calc_cast_crew))
+        st.caption("Director, acting talent & total crew day-rates")
 
 # ==========================================
 # POPULATE CHARTS
