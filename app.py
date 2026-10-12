@@ -148,6 +148,9 @@ total_budget = subtotal + contingency
 # ==========================================
 # EXPORTS (CSV / PDF) - EXECUTIVE SUMMARY MODE
 # ==========================================
+# ==========================================
+# EXPORTS (CSV / PDF) - EXECUTIVE SUMMARY MODE
+# ==========================================
 export_data = {
     "Project Phase": ["Pre-Production", "Production", "Post-Production", "Cast & Crew (Inc. Director/Lead)", f"Contingency ({m_cont}%)", "FINAL TOTAL BUDGET"],
     "Total Allocated Cost": [
@@ -159,49 +162,89 @@ export_data = {
         format_inr(total_budget)
     ]
 }
-df_export = pd.DataFrame(export_data)
-csv_data = df_export.to_csv(index=False).encode('utf-8')
+df_main = pd.DataFrame(export_data)
 
-def create_pdf(dataframe, total):
+# 1. Create the Tentative Data for Export
+tentative_data = {
+    "Project Phase": [
+        "Daily Burn - Camera/Grip/Eq (35%)", "Daily Burn - Locations (15%)", "Daily Burn - Food/Crafty (20%)", "Daily Burn - Travel (10%)", "Daily Burn - Misc/Art (20%)",
+        "Pre-Prod - Scouting & Sets (40%)", "Pre-Prod - Prosthetics & SFX (60%)",
+        "Post-Prod - Edit & DI (35%)", "Post-Prod - Sound Design/Foley (35%)", "Post-Prod - Original Score (15%)", "Post-Prod - Atmos Mix (15%)"
+    ],
+    "Total Allocated Cost": [
+        format_inr(m_burn * 0.35), format_inr(m_burn * 0.15), format_inr(m_burn * 0.20), format_inr(m_burn * 0.10), format_inr(m_burn * 0.20),
+        format_inr(m_pre * 0.40), format_inr(m_pre * 0.60),
+        format_inr(m_post * 0.35), format_inr(m_post * 0.35), format_inr(m_post * 0.15), format_inr(m_post * 0.15)
+    ]
+}
+df_tentative = pd.DataFrame(tentative_data)
+
+# 2. Combine for CSV with a visual spacer and warning
+csv_df = pd.concat([
+    df_main, 
+    pd.DataFrame({"Project Phase": [""], "Total Allocated Cost": [""]}),
+    pd.DataFrame({"Project Phase": ["--- TENTATIVE DEPARTMENT BREAKDOWN ---"], "Total Allocated Cost": [""]}),
+    pd.DataFrame({"Project Phase": ["WARNING: TENTATIVE FIGURES: These are auto-calculated industry averages based on your Base Allocations. They are strictly estimates for visualization, not actual final quotes."], "Total Allocated Cost": [""]}),
+    df_tentative
+], ignore_index=True)
+csv_data = csv_df.to_csv(index=False).encode('utf-8')
+
+# 3. Draw both tables on the PDF
+def create_pdf(df_main, df_tentative, total):
     pdf = FPDF()
     pdf.add_page()
+    
+    # --- Top Sheet Table ---
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "VRITHA - Executive Budget Top Sheet", ln=True, align='C')
-    pdf.set_font("Arial", '', 12)
+    pdf.ln(5)
     
-    pdf.ln(10)
     pdf.set_fill_color(220, 220, 220)
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(100, 10, "Project Phase", border=1, fill=True, align='L')
     pdf.cell(90, 10, "Total Allocated Cost", border=1, ln=True, fill=True, align='R')
     
     pdf.set_font("Arial", '', 12)
-    for i in range(len(dataframe)):
-        if dataframe.iloc[i]['Project Phase'] == "FINAL TOTAL BUDGET":
+    for i in range(len(df_main)):
+        if df_main.iloc[i]['Project Phase'] == "FINAL TOTAL BUDGET":
             pdf.set_font("Arial", 'B', 12)
-        pdf.cell(100, 12, str(dataframe.iloc[i]['Project Phase']), border=1)
-        
-        safe_cost = dataframe.iloc[i]['Total Allocated Cost'].replace("₹", "Rs. ")
+        pdf.cell(100, 12, str(df_main.iloc[i]['Project Phase']), border=1)
+        safe_cost = df_main.iloc[i]['Total Allocated Cost'].replace("₹", "Rs. ")
         pdf.cell(90, 12, safe_cost, border=1, ln=True, align='R')
+        
+    # --- Tentative Breakdown Table ---
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Tentative Department Breakdown", ln=True, align='L')
+    
+    # Warning Text
+    pdf.set_font("Arial", 'I', 9)
+    pdf.set_text_color(180, 0, 0) # Dark red warning color
+    pdf.multi_cell(0, 5, "WARNING: TENTATIVE FIGURES: These are auto-calculated industry averages based on your Base Allocations. They are strictly estimates for visualization, not actual final quotes.")
+    pdf.set_text_color(0, 0, 0) # Reset to black
+    pdf.ln(3)
+    
+    # Tentative Headers
+    pdf.set_fill_color(240, 240, 240) # Lighter grey for secondary table
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(100, 8, "Department Estimate", border=1, fill=True, align='L')
+    pdf.cell(90, 8, "Estimated Cost", border=1, ln=True, fill=True, align='R')
+    
+    # Tentative Rows
+    pdf.set_font("Arial", '', 10)
+    for i in range(len(df_tentative)):
+        pdf.cell(100, 8, str(df_tentative.iloc[i]['Project Phase']), border=1)
+        safe_cost = df_tentative.iloc[i]['Total Allocated Cost'].replace("₹", "Rs. ")
+        pdf.cell(90, 8, safe_cost, border=1, ln=True, align='R')
         
     try:
         return bytes(pdf.output(dest='S'), 'latin1')
     except:
         return bytes(pdf.output(dest='S'))
 
-pdf_data = create_pdf(df_export, total_budget)
+pdf_data = create_pdf(df_main, df_tentative, total_budget)
 
 with header_container:
-    title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
-    with title_col:
-        st.title("🎬 VRITHA - Master Dashboard")
-        st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
-    with btn_col1:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_executive_budget.csv", mime="text/csv", use_container_width=True)
-    with btn_col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_executive_topsheet.pdf", mime="application/pdf", use_container_width=True)
 
 # ==========================================
 # POPULATE TOP METRICS (6 Columns Ordered)
