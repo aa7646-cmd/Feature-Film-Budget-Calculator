@@ -148,9 +148,6 @@ total_budget = subtotal + contingency
 # ==========================================
 # EXPORTS (CSV / PDF) - EXECUTIVE SUMMARY MODE
 # ==========================================
-# ==========================================
-# EXPORTS (CSV / PDF) - EXECUTIVE SUMMARY MODE
-# ==========================================
 export_data = {
     "Project Phase": ["Pre-Production", "Production", "Post-Production", "Cast & Crew (Inc. Director/Lead)", f"Contingency ({m_cont}%)", "FINAL TOTAL BUDGET"],
     "Total Allocated Cost": [
@@ -164,7 +161,6 @@ export_data = {
 }
 df_main = pd.DataFrame(export_data)
 
-# 1. Create the Tentative Data for Export
 tentative_data = {
     "Project Phase": [
         "Daily Burn - Camera/Grip/Eq (35%)", "Daily Burn - Locations (15%)", "Daily Burn - Food/Crafty (20%)", "Daily Burn - Travel (10%)", "Daily Burn - Misc/Art (20%)",
@@ -179,7 +175,6 @@ tentative_data = {
 }
 df_tentative = pd.DataFrame(tentative_data)
 
-# 2. Combine for CSV with a visual spacer and warning
 csv_df = pd.concat([
     df_main, 
     pd.DataFrame({"Project Phase": [""], "Total Allocated Cost": [""]}),
@@ -189,12 +184,11 @@ csv_df = pd.concat([
 ], ignore_index=True)
 csv_data = csv_df.to_csv(index=False).encode('utf-8')
 
-# 3. Draw both tables on the PDF
 def create_pdf(df_main, df_tentative, total):
     pdf = FPDF()
     pdf.add_page()
     
-    # --- Top Sheet Table ---
+    # Top Sheet Table
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "VRITHA - Executive Budget Top Sheet", ln=True, align='C')
     pdf.ln(5)
@@ -212,25 +206,22 @@ def create_pdf(df_main, df_tentative, total):
         safe_cost = df_main.iloc[i]['Total Allocated Cost'].replace("₹", "Rs. ")
         pdf.cell(90, 12, safe_cost, border=1, ln=True, align='R')
         
-    # --- Tentative Breakdown Table ---
+    # Tentative Breakdown Table
     pdf.ln(10)
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Tentative Department Breakdown", ln=True, align='L')
     
-    # Warning Text
     pdf.set_font("Arial", 'I', 9)
-    pdf.set_text_color(180, 0, 0) # Dark red warning color
+    pdf.set_text_color(180, 0, 0)
     pdf.multi_cell(0, 5, "WARNING: TENTATIVE FIGURES: These are auto-calculated industry averages based on your Base Allocations. They are strictly estimates for visualization, not actual final quotes.")
-    pdf.set_text_color(0, 0, 0) # Reset to black
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(3)
     
-    # Tentative Headers
-    pdf.set_fill_color(240, 240, 240) # Lighter grey for secondary table
+    pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(100, 8, "Department Estimate", border=1, fill=True, align='L')
     pdf.cell(90, 8, "Estimated Cost", border=1, ln=True, fill=True, align='R')
     
-    # Tentative Rows
     pdf.set_font("Arial", '', 10)
     for i in range(len(df_tentative)):
         pdf.cell(100, 8, str(df_tentative.iloc[i]['Project Phase']), border=1)
@@ -245,6 +236,16 @@ def create_pdf(df_main, df_tentative, total):
 pdf_data = create_pdf(df_main, df_tentative, total_budget)
 
 with header_container:
+    title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
+    with title_col:
+        st.title("🎬 VRITHA - Master Dashboard")
+        st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
+    with btn_col1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_executive_budget.csv", mime="text/csv", use_container_width=True)
+    with btn_col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_executive_topsheet.pdf", mime="application/pdf", use_container_width=True)
 
 # ==========================================
 # POPULATE TOP METRICS (6 Columns Ordered)
