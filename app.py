@@ -169,17 +169,32 @@ export_data = {
     ]
 }
 df_main = pd.DataFrame(export_data)
-
 tentative_data = {
     "Project Phase": [
-        "Daily Burn - Camera/Grip/Eq (35%)", "Daily Burn - Locations (15%)", "Daily Burn - Food/Crafty (20%)", "Daily Burn - Travel (10%)", "Daily Burn - Misc/Art (20%)",
-        "Pre-Prod - Scouting & Sets (40%)", "Pre-Prod - Prosthetics & SFX (60%)",
-        "Post-Prod - Edit & DI (35%)", "Post-Prod - Sound Design/Foley (35%)", "Post-Prod - Original Score (15%)", "Post-Prod - Atmos Mix (15%)"
+        "Daily Burn - Camera/Grip/Eq", 
+        "Daily Burn - Locations", 
+        "Daily Burn - Food/Crafty", 
+        "Daily Burn - Travel", 
+        "Daily Burn - Misc/Art",
+        "Pre-Prod - Scouting & Sets", 
+        "Pre-Prod - Prosthetics & SFX",
+        "Post-Prod - Edit & DI", 
+        "Post-Prod - Sound Design/Foley", 
+        "Post-Prod - Original Score", 
+        "Post-Prod - Atmos Mix"
     ],
     "Total Allocated Cost": [
-        format_inr(m_burn * 0.35), format_inr(m_burn * 0.15), format_inr(m_burn * 0.20), format_inr(m_burn * 0.10), format_inr(m_burn * 0.20),
-        format_inr(m_pre * 0.40), format_inr(m_pre * 0.60),
-        format_inr(m_post * 0.35), format_inr(m_post * 0.35), format_inr(m_post * 0.15), format_inr(m_post * 0.15)
+        format_inr((m_burn * 0.35) + g_eq), 
+        format_inr((m_burn * 0.15) + g_loc), 
+        format_inr((m_burn * 0.20) + g_food), 
+        format_inr((m_burn * 0.10) + g_trav), 
+        format_inr(m_burn * 0.20),
+        format_inr((m_pre * 0.40) + g_pre), 
+        format_inr((m_pre * 0.60) + g_sfx),
+        format_inr((m_post * 0.35) + g_edit), 
+        format_inr((m_post * 0.35) + g_fol), 
+        format_inr((m_post * 0.15) + g_sco), 
+        format_inr((m_post * 0.15) + g_atm)
     ]
 }
 df_tentative = pd.DataFrame(tentative_data)
