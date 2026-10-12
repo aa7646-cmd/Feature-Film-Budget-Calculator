@@ -74,7 +74,7 @@ with section1_container:
         # Changed format to "%d" to remove the Rupee symbol from days
         days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days", disable_all_macro, "%d")
         daily_burn = url_slider("Daily Burn (Excl. Crew)", 0, 5000000, 85000, 5000, "m_burn", disable_macro_overlap)
-        macro_crew = url_slider("Total Crew Cost (₹)", 0, 20000000, 1200000, 50000, "m_crew", disable_macro_overlap)
+        macro_crew = url_slider("Daily Crew Cost (₹)", 0, 20000000, 1200000, 50000, "m_crew", disable_macro_overlap)
     with c2:
         pre_prod = url_slider("Pre-Production (₹)", 0, 50000000, 1000000, 50000, "m_pre", disable_macro_overlap)
         post_prod = url_slider("Post-Production (₹)", 0, 50000000, 3000000, 50000, "m_post", disable_macro_overlap)
