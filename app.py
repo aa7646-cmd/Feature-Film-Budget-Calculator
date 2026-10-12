@@ -3,23 +3,15 @@ import pandas as pd
 import plotly.express as px
 from fpdf import FPDF
 
-st.set_page_config(page_title="Budget Master Dashboard", layout="wide")
+st.set_page_config(page_title="VRITHA Master Dashboard", layout="wide")
 
 # ==========================================
 # URL SYNC HELPERS & FORMATTING
 # ==========================================
-# Added format_str parameter to control ₹ vs % vs plain numbers
-def url_slider(label, min_v, max_v, default_v, step, param, disabled=False, format_str="₹%,d"):
+def url_slider(label, min_v, max_v, default_v, step, param, format_str="₹%,d"):
     if param in st.query_params:
         default_v = int(st.query_params[param])
-    val = st.slider(label, min_v, max_v, default_v, step=step, disabled=disabled, format=format_str)
-    st.query_params[param] = val
-    return val
-
-def url_toggle(label, default_v, param):
-    if param in st.query_params:
-        default_v = str(st.query_params[param]).lower() == "true"
-    val = st.toggle(label, value=default_v)
+    val = st.slider(label, min_v, max_v, default_v, step=step, format=format_str)
     st.query_params[param] = val
     return val
 
@@ -49,106 +41,85 @@ st.markdown("---")
 section2_container = st.container()
 
 # ==========================================
-# SECTIONS 1 & 2 UI + TOGGLES
+# SECTIONS 1 & 2: ALL SLIDERS ACTIVE
 # ==========================================
 with section1_container:
-    st.header("Section 1: Major Budget Summary")
-    macro_on = url_toggle("🔓 Enable Major Budget Adjustments", True, "t_macro")
-    
-with section2_container:
-    st.header("Section 2: Granular Department Adjustments")
-    gran_on = url_toggle("🔬 Enable Granular Adjustments", False, "t_gran")
-
-disable_all_macro = not macro_on
-disable_macro_overlap = gran_on or (not macro_on)
-disable_gran = not gran_on
-
-with section1_container:
-    if gran_on and macro_on:
-        st.info("💡 **Note:** The Granular Section is currently overriding Pre-Prod, Post-Prod, Marketing, and Daily Burn.")
-    elif not macro_on:
-        st.warning("🔒 Major Budget Adjustments are turned off.")
+    st.header("Section 1: Major Budget Summary (Base Allocations)")
+    st.info("💡 **Calculator Mode:** All sliders are active. These base amounts will add together with your granular adjustments below to create the final totals.")
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        # Changed format to "%d" to remove the Rupee symbol from days
-        days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days", disable_all_macro, "%d")
-        daily_burn = url_slider("Daily Burn (Excl. Crew)", 0, 5000000, 85000, 5000, "m_burn", disable_macro_overlap)
-        macro_crew = url_slider("Daily Crew Cost (₹)", 0, 20000000, 1200000, 50000, "m_crew", disable_macro_overlap)
+        # %d removes the Rupee symbol for days
+        m_days = url_slider("Shoot Days", 1, 100, 30, 1, "m_days", "%d")
+        m_burn = url_slider("Base Daily Burn (₹)", 0, 5000000, 85000, 5000, "m_burn")
+        m_crew = url_slider("Base Crew Cost (Lump Sum)", 0, 20000000, 1200000, 50000, "m_crew")
     with c2:
-        pre_prod = url_slider("Pre-Production (₹)", 0, 50000000, 1000000, 50000, "m_pre", disable_macro_overlap)
-        post_prod = url_slider("Post-Production (₹)", 0, 50000000, 3000000, 50000, "m_post", disable_macro_overlap)
+        m_pre = url_slider("Base Pre-Production (₹)", 0, 50000000, 1000000, 50000, "m_pre")
+        m_post = url_slider("Base Post-Production (₹)", 0, 50000000, 3000000, 50000, "m_post")
     with c3:
-        cast_fee = url_slider("Total Cast Fee (₹)", 0, 50000000, 0, 50000, "m_cast", disable_all_macro)
-        dir_fee = url_slider("Director Fee (₹)", 0, 20000000, 0, 50000, "m_dir", disable_all_macro)
+        m_cast = url_slider("Total Cast Fee (₹)", 0, 50000000, 0, 50000, "m_cast")
+        m_dir = url_slider("Director Fee (₹)", 0, 20000000, 0, 50000, "m_dir")
     with c4:
-        marketing = url_slider("Marketing & PR (₹)", 0, 20000000, 500000, 50000, "m_mkt", disable_macro_overlap)
-        # Changed format to "%d%%" to show a percentage sign instead of Rupees
-        contingency_pct = url_slider("Contingency (%)", 0, 30, 10, 1, "m_cont", disable_all_macro, "%d%%")
+        m_mkt = url_slider("Base Marketing & PR (₹)", 0, 20000000, 500000, 50000, "m_mkt")
+        # %d%% formats as a percentage
+        m_cont = url_slider("Contingency Buffer (%)", 0, 30, 10, 1, "m_cont", "%d%%")
 
 with section2_container:
-    if not gran_on:
-        st.caption("🔒 *These sliders are disabled. Turn on the Granular toggle above to unlock.*")
+    st.header("Section 2: Granular Department Adjustments")
+    st.caption("These specific line items will add directly on top of the base amounts in Section 1.")
         
     g1, g2, g3, g4 = st.columns(4)
     with g1:
         st.subheader("Daily Costs")
-        loc = url_slider("Location/Day", 0, 1000000, 12000, 1000, "g_loc", disable_gran)
-        crew = url_slider("Crew/Day", 0, 2000000, 40000, 2000, "g_crew", disable_gran)
-        equip = url_slider("Equipment/Day", 0, 1000000, 18000, 1000, "g_eq", disable_gran)
-        food = url_slider("Food & Lodging/Day", 0, 1000000, 20000, 1000, "g_food", disable_gran)
-        travel = url_slider("Travel/Day", 0, 500000, 5000, 1000, "g_trav", disable_gran)
+        g_loc = url_slider("Location/Day", 0, 1000000, 12000, 1000, "g_loc")
+        g_crew = url_slider("Crew/Day", 0, 2000000, 40000, 2000, "g_crew")
+        g_eq = url_slider("Equipment/Day", 0, 1000000, 18000, 1000, "g_eq")
+        g_food = url_slider("Food & Lodging/Day", 0, 1000000, 20000, 1000, "g_food")
+        g_trav = url_slider("Travel/Day", 0, 500000, 5000, 1000, "g_trav")
     with g2:
         st.subheader("Pre-Production")
-        pre_base = url_slider("Scouting & Sets", 0, 20000000, 400000, 50000, "g_pre", disable_gran)
-        sfx = url_slider("Prosthetics & SFX", 0, 20000000, 600000, 50000, "g_sfx", disable_gran)
+        g_pre = url_slider("Scouting & Sets", 0, 20000000, 400000, 50000, "g_pre")
+        g_sfx = url_slider("Prosthetics & SFX", 0, 20000000, 600000, 50000, "g_sfx")
     with g3:
         st.subheader("Post-Production")
-        edit = url_slider("Edit & DI/Color", 0, 20000000, 800000, 50000, "g_edit", disable_gran)
-        foley = url_slider("Foley & Sound Design", 0, 20000000, 800000, 50000, "g_fol", disable_gran)
-        score = url_slider("Original Score", 0, 20000000, 400000, 50000, "g_sco", disable_gran)
-        atmos = url_slider("Dolby Atmos Mix", 0, 20000000, 400000, 50000, "g_atm", disable_gran)
+        g_edit = url_slider("Edit & DI/Color", 0, 20000000, 800000, 50000, "g_edit")
+        g_fol = url_slider("Foley & Sound Design", 0, 20000000, 800000, 50000, "g_fol")
+        g_sco = url_slider("Original Score", 0, 20000000, 400000, 50000, "g_sco")
+        g_atm = url_slider("Dolby Atmos Mix", 0, 20000000, 400000, 50000, "g_atm")
     with g4:
         st.subheader("Marketing")
-        marketing_g = url_slider("Marketing & PR", 0, 20000000, 500000, 50000, "g_mkt", disable_gran)
+        g_mkt = url_slider("Marketing Add-on", 0, 20000000, 0, 50000, "g_mkt2")
 
 # ==========================================
-# MATH ENGINE
+# ADDITIVE MATH ENGINE (Unrestricted)
 # ==========================================
-if gran_on:
-    calc_total_crew = crew * days
-    calc_daily_burn = loc + equip + food + travel
-    calc_prod_phase = calc_daily_burn * days
-    calc_pre_prod = pre_base + sfx
-    calc_post_prod = edit + foley + score + atmos
-    calc_mkt = marketing_g
-else:
-    calc_total_crew = macro_crew
-    calc_daily_burn = daily_burn
-    calc_prod_phase = daily_burn * days
-    calc_pre_prod = pre_prod
-    calc_post_prod = post_prod
-    calc_mkt = marketing
-    
-    loc, equip, food, travel = [int(daily_burn * p) for p in (0.22, 0.38, 0.30, 0.10)]
-    crew = int(macro_crew / days) if days > 0 else 0
-    pre_base, sfx = [int(pre_prod * p) for p in (0.40, 0.60)]
-    edit, foley, score, atmos = [int(post_prod * p) for p in (0.35, 0.35, 0.15, 0.15)]
+# 1. Cast & Crew
+calc_total_crew = m_crew + (g_crew * m_days)
+calc_cast_crew = m_cast + m_dir + calc_total_crew
 
-atl_cost = dir_fee + cast_fee
-calc_cast_crew = cast_fee + dir_fee + calc_total_crew
+# 2. Production (Base burn + Granular daily items)
+calc_daily_burn = m_burn + g_loc + g_eq + g_food + g_trav
+calc_prod_phase = calc_daily_burn * m_days
 
-subtotal = calc_prod_phase + calc_total_crew + calc_pre_prod + calc_post_prod + calc_mkt + atl_cost
-contingency = subtotal * (contingency_pct / 100.0)
+# 3. Pre & Post Production
+calc_pre_prod = m_pre + g_pre + g_sfx
+calc_post_prod = m_post + g_edit + g_fol + g_sco + g_atm
+
+# 4. Marketing
+calc_total_mkt = m_mkt + g_mkt
+
+# 5. Grand Totals
+subtotal = calc_prod_phase + calc_cast_crew + calc_pre_prod + calc_post_prod + calc_total_mkt
+contingency = subtotal * (m_cont / 100.0)
 total_budget = subtotal + contingency
 
 # ==========================================
 # EXPORTS (CSV / PDF) & HEADER INJECTION
 # ==========================================
 export_data = {
-    "Phase": ["Above-The-Line", "Above-The-Line", "Production", "Production", "Production", "Production", "Production", "Pre-Production", "Pre-Production", "Post-Production", "Post-Production", "Post-Production", "Post-Production", "Distribution", "Contingency", "TOTAL BUDGET"],
-    "Department": ["Director Fee", "Cast Fee", "Location", "Crew", "Equipment", "Food & Lodging", "Travel & Fuel", "Scouting & Sets", "Prosthetics & SFX", "Edit & DI/Color", "Foley & Sound", "Original Score", "Dolby Atmos Mix", "Marketing & PR", f"Contingency ({contingency_pct}%)", "ALL DEPARTMENTS"],
-    "Cost (INR)": [dir_fee, cast_fee, loc*days, calc_total_crew, equip*days, food*days, travel*days, pre_base, sfx, edit, foley, score, atmos, calc_mkt, contingency, total_budget]
+    "Phase": ["Cast & Crew", "Cast & Crew", "Cast & Crew", "Production", "Production", "Production", "Production", "Production", "Pre-Production", "Pre-Production", "Pre-Production", "Post-Production", "Post-Production", "Post-Production", "Post-Production", "Post-Production", "Distribution", "Distribution", "Contingency", "TOTAL BUDGET"],
+    "Department": ["Director Fee", "Cast Fee", "Total Crew (Base + Daily)", "Base Daily Burn (Total)", "Locations (Total)", "Equipment (Total)", "Food & Lodging (Total)", "Travel & Fuel (Total)", "Base Pre-Production", "Scouting & Sets", "Prosthetics & SFX", "Base Post-Production", "Edit & DI/Color", "Foley & Sound", "Original Score", "Dolby Atmos Mix", "Base Marketing & PR", "Marketing Add-on", f"Contingency ({m_cont}%)", "ALL DEPARTMENTS"],
+    "Cost (INR)": [m_dir, m_cast, calc_total_crew, m_burn*m_days, g_loc*m_days, g_eq*m_days, g_food*m_days, g_trav*m_days, m_pre, g_pre, g_sfx, m_post, g_edit, g_fol, g_sco, g_atm, m_mkt, g_mkt, contingency, total_budget]
 }
 df_export = pd.DataFrame(export_data)
 csv_data = df_export.to_csv(index=False).encode('utf-8')
@@ -157,7 +128,7 @@ def create_pdf(dataframe, total):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "Budget - Feature Film Budget Top Sheet", ln=True, align='C')
+    pdf.cell(0, 10, "VRITHA - Feature Film Budget Top Sheet", ln=True, align='C')
     pdf.set_font("Arial", '', 12)
     safe_total = format_inr(total).replace("₹", "Rs. ")
     pdf.cell(0, 10, f"Total Approved Budget: {safe_total}", ln=True, align='C')
@@ -188,50 +159,50 @@ pdf_data = create_pdf(df_export, total_budget)
 with header_container:
     title_col, empty_col, btn_col1, btn_col2 = st.columns([4, 1, 1.5, 1.5])
     with title_col:
-        st.title("🎬 Budget - Master Dashboard")
+        st.title("🎬 VRITHA - Master Dashboard")
         st.markdown("Set variables, then **copy the URL** to share this exact calculation.")
     with btn_col1:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📊 CSV Export", data=csv_data, file_name="budget.csv", mime="text/csv", use_container_width=True)
+        st.download_button("📊 CSV Export", data=csv_data, file_name="vritha_budget.csv", mime="text/csv", use_container_width=True)
     with btn_col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("📄 PDF Export", data=pdf_data, file_name="topsheet.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button("📄 PDF Export", data=pdf_data, file_name="vritha_topsheet.pdf", mime="application/pdf", use_container_width=True)
 
 # ==========================================
-# POPULATE TOP METRICS (5 Columns with Captions)
+# POPULATE TOP METRICS (5 Columns Ordered)
 # ==========================================
 with metrics_container:
     m1, m2, m3, m4, m5 = st.columns(5)
     
     with m1:
         st.metric("💰 TOTAL BUDGET", format_inr(total_budget))
-        st.caption("Includes all phases + Contingency")
+        st.caption("Includes all phases + Contingency buffer.")
         
     with m2:
-        st.metric("📝 Total Pre-Production", format_inr(calc_pre_prod))
-        st.caption("Scouting, set builds, prosthetics & SFX")
+        st.metric("📝 Total Pre-Production Cost", format_inr(calc_pre_prod))
+        st.caption("Includes scouting, set builds, prosthetics, SFX & base pre-prod.")
         
     with m3:
-        st.metric("🎥 Total Production", format_inr(calc_prod_phase))
-        st.caption("Principal photography, locations, gear & food")
+        st.metric("🎥 Total Production Cost", format_inr(calc_prod_phase))
+        st.caption("Principal photography, locations, gear, food, travel & base daily burn.")
         
     with m4:
-        st.metric("🎬 Total Post-Production", format_inr(calc_post_prod))
-        st.caption("Editing, DI, Foley, original score & Atmos")
+        st.metric("🎬 Total Post-Production Cost", format_inr(calc_post_prod))
+        st.caption("Editing, DI, Foley, original score, Atmos & base post-prod.")
         
     with m5:
-        st.metric("🎭 Cast & Crew Totals", format_inr(calc_cast_crew))
-        st.caption("Director, acting talent & total crew day-rates")
+        st.metric("🎭 Total Cost for Cast & Crew", format_inr(calc_cast_crew))
+        st.caption("Director, acting talent, base crew & granular crew day-rates.")
 
 # ==========================================
-# POPULATE CHARTS
+# POPULATE LOCKED CHARTS
 # ==========================================
 with charts_container:
     chart_col1, chart_col2 = st.columns(2)
     
     df_macro = pd.DataFrame({
-        "Category": ["Above-The-Line", "Total Crew", "Production", "Pre-Production", "Post-Production", "Marketing", "Contingency"],
-        "Cost (₹)": [atl_cost, calc_total_crew, calc_prod_phase, calc_pre_prod, calc_post_prod, calc_mkt, contingency]
+        "Category": ["Cast & Crew", "Production", "Pre-Production", "Post-Production", "Marketing", "Contingency"],
+        "Cost (₹)": [calc_cast_crew, calc_prod_phase, calc_pre_prod, calc_post_prod, calc_total_mkt, contingency]
     })
     df_macro = df_macro[df_macro["Cost (₹)"] > 0]
     
@@ -243,14 +214,16 @@ with charts_container:
     fig1.update_traces(showlegend=False, textfont_size=14, textangle=0, textposition="outside", cliponaxis=False, marker_cornerradius=15)
     chart_col1.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
 
+    # Detailed departmental breakdown
     df_micro = pd.DataFrame({
-        "Department": ["Location", "Crew", "Equipment", "Food", "Travel", "Prosthetics", "Edit/DI", "Foley", "Score", "Atmos", "Marketing"],
-        "Cost (₹)": [loc*days, calc_total_crew, equip*days, food*days, travel*days, sfx, edit, foley, score, atmos, calc_mkt]
+        "Department": ["Director", "Cast", "Crew (Total)", "Base Prod", "Location", "Equipment", "Food", "Travel", "Base Pre-Prod", "SFX & Sets", "Base Post-Prod", "Score/Audio", "Marketing"],
+        "Cost (₹)": [m_dir, m_cast, calc_total_crew, m_burn*m_days, g_loc*m_days, g_eq*m_days, g_food*m_days, g_trav*m_days, m_pre, g_pre+g_sfx, m_post, g_edit+g_fol+g_sco+g_atm, calc_total_mkt]
     }).sort_values(by="Cost (₹)", ascending=False)
+    
     df_micro = df_micro[df_micro["Cost (₹)"] > 0]
     
     fig2 = px.bar(df_micro, x="Department", y="Cost (₹)", text=df_micro["Cost (₹)"].apply(format_inr),
-                  title="Granular Department Breakdown", color="Department", template="plotly_dark")
+                  title="Granular Item Breakdown", color="Department", template="plotly_dark")
     fig2.update_layout(dragmode=False)
     fig2.update_xaxes(fixedrange=True)
     fig2.update_yaxes(fixedrange=True)
